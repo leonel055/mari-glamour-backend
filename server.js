@@ -46,6 +46,7 @@ async function startServer() {
     });
   } catch (error) {
     console.error('Error al conectar con la base de datos:', error.message);
+    console.error(error)
     process.exit(1);
   }
 }
