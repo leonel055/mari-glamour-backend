@@ -3,6 +3,8 @@ const Usuario = require('./Usuario');
 const Cliente = require('./Cliente');
 const Servicio = require('./Servicio');
 const Turno = require('./Turno');
+const Curso = require('./Curso');
+const Producto = require('./Producto');
 
 Cliente.hasMany(Turno, { foreignKey: 'clienteId' });
 Turno.belongsTo(Cliente, { foreignKey: 'clienteId' });
@@ -19,4 +21,6 @@ module.exports = {
   Cliente,
   Servicio,
   Turno,
+  Curso,
+  Producto,
 };

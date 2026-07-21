@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { Servicio } = require('../models');
+const { Servicio, Curso, Producto } = require('../models');
 const turnoService = require('../services/turno.service');
 
 const router = Router();
@@ -13,6 +13,30 @@ router.get('/servicios', async (req, res) => {
     res.json(servicios);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener servicios' });
+  }
+});
+
+router.get('/cursos', async (req, res) => {
+  try {
+    const cursos = await Curso.findAll({
+      where: { activo: true },
+      order: [['fechaInicio', 'ASC']],
+    });
+    res.json(cursos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener cursos' });
+  }
+});
+
+router.get('/productos', async (req, res) => {
+  try {
+    const productos = await Producto.findAll({
+      where: { activo: true },
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(productos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener productos' });
   }
 });
 

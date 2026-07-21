@@ -9,6 +9,8 @@ const publicRoutes = require('./routes/public.routes');
 const servicioRoutes = require('./routes/servicio.routes');
 const clienteRoutes = require('./routes/cliente.routes');
 const turnoRoutes = require('./routes/turno.routes');
+const cursoRoutes = require('./routes/curso.routes');
+const productoRoutes = require('./routes/producto.routes');
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use('/api/public', publicRoutes);
 app.use('/api/servicios', autenticar, servicioRoutes);
 app.use('/api/clientes', autenticar, clienteRoutes);
 app.use('/api/turnos', autenticar, turnoRoutes);
+app.use('/api/cursos', autenticar, cursoRoutes);
+app.use('/api/productos', autenticar, productoRoutes);
 
 const PORT = process.env.PORT || 3000;
 
