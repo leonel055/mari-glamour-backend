@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { sequelize } = require('./models');
 const autenticar = require('./middlewares/autenticar');
 
@@ -11,6 +12,7 @@ const clienteRoutes = require('./routes/cliente.routes');
 const turnoRoutes = require('./routes/turno.routes');
 const cursoRoutes = require('./routes/curso.routes');
 const productoRoutes = require('./routes/producto.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
 
@@ -28,12 +30,14 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/public/assets', express.static(path.join(__dirname, 'public', 'assets')));
 
 app.use('/api/servicios', autenticar, servicioRoutes);
 app.use('/api/clientes', autenticar, clienteRoutes);
 app.use('/api/turnos', autenticar, turnoRoutes);
 app.use('/api/cursos', autenticar, cursoRoutes);
 app.use('/api/productos', autenticar, productoRoutes);
+app.use('/api/upload', autenticar, uploadRoutes);
 
 const PORT = process.env.PORT || 3000;
 
