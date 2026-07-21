@@ -12,13 +12,13 @@ const turnoRoutes = require('./routes/turno.routes');
 
 const app = express();
 
-const FRONTEND_URL = process.env.FRONTEND_URL;
+const isProd = process.env.NODE_ENV === 'production';
 
 app.use(
   cors({
-    origin: FRONTEND_URL
-      ? [FRONTEND_URL, 'http://localhost:4200']
-      : '*',
+    origin: isProd
+      ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : '*')
+      : (origin, cb) => cb(null, true),
     credentials: true,
   })
 );
