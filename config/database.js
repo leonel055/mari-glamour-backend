@@ -1,11 +1,19 @@
 const { Sequelize } = require('sequelize');
 
+const poolConfig = {
+  max: 5,
+  min: 0,
+  acquire: 30000,
+  idle: 10000,
+};
+
 let sequelize;
 
 if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: false,
+    pool: poolConfig,
     dialectOptions: {
       ssl: {
         require: true,
@@ -23,6 +31,7 @@ if (process.env.DATABASE_URL) {
       port: process.env.DB_PORT,
       dialect: 'postgres',
       logging: false,
+      pool: poolConfig,
     }
   );
 }
