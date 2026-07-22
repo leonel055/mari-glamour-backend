@@ -13,6 +13,8 @@ const clienteRoutes = require('./routes/cliente.routes');
 const turnoRoutes = require('./routes/turno.routes');
 const cursoRoutes = require('./routes/curso.routes');
 const productoRoutes = require('./routes/producto.routes');
+const pagoRoutes = require('./routes/pago.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
@@ -45,6 +47,8 @@ app.use('/api/turnos', autenticar, turnoRoutes);
 app.use('/api/cursos', autenticar, cursoRoutes);
 app.use('/api/productos', autenticar, productoRoutes);
 app.use('/api/upload', autenticar, uploadRoutes);
+app.use('/api/pagos', pagoRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 const PORT = process.env.PORT || 3000;
 

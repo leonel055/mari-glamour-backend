@@ -5,6 +5,9 @@ const Servicio = require('./Servicio');
 const Turno = require('./Turno');
 const Curso = require('./Curso');
 const Producto = require('./Producto');
+const Pedido = require('./Pedido');
+const DetallePedido = require('./DetallePedido');
+const Pago = require('./Pago');
 
 Cliente.hasMany(Turno, { foreignKey: 'clienteId' });
 Turno.belongsTo(Cliente, { foreignKey: 'clienteId' });
@@ -15,6 +18,15 @@ Turno.belongsTo(Servicio, { foreignKey: 'servicioId' });
 Usuario.hasMany(Turno, { foreignKey: 'usuarioId' });
 Turno.belongsTo(Usuario, { foreignKey: 'usuarioId' });
 
+Pedido.hasMany(DetallePedido, { foreignKey: 'pedidoId', as: 'detalles' });
+DetallePedido.belongsTo(Pedido, { foreignKey: 'pedidoId' });
+
+DetallePedido.belongsTo(Producto, { foreignKey: 'productoId' });
+Producto.hasMany(DetallePedido, { foreignKey: 'productoId' });
+
+Pedido.hasOne(Pago, { foreignKey: 'pedidoId', as: 'pago' });
+Pago.belongsTo(Pedido, { foreignKey: 'pedidoId' });
+
 module.exports = {
   sequelize,
   Usuario,
@@ -23,4 +35,7 @@ module.exports = {
   Turno,
   Curso,
   Producto,
+  Pedido,
+  DetallePedido,
+  Pago,
 };
