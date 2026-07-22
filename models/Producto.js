@@ -15,6 +15,10 @@ const Producto = sequelize.define('Producto', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  marca: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   precio: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
@@ -26,7 +30,10 @@ const Producto = sequelize.define('Producto', {
   categoria: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'Ej: Uñas, Cuidado, Accesorios',
+  },
+  stock: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   activo: {
     type: DataTypes.BOOLEAN,
