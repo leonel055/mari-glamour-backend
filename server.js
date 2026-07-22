@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { sequelize } = require('./models');
 const autenticar = require('./middlewares/autenticar');
 
@@ -15,6 +16,11 @@ const productoRoutes = require('./routes/producto.routes');
 const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
+
+const assetsDir = path.join(__dirname, 'public', 'assets');
+if (!fs.existsSync(assetsDir)) {
+  fs.mkdirSync(assetsDir, { recursive: true });
+}
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -48,7 +54,10 @@ async function startServer() {
 
     if (process.env.NODE_ENV !== 'production') {
       await sequelize.sync({ alter: true });
-      console.log('Modelos sincronizados con la base de datos.');
+      console.log('Modelos sincronizados con alter.');
+    } else {
+      await sequelize.sync();
+      console.log('Tablas creadas si no existen.');
     }
 
     app.listen(PORT, () => {

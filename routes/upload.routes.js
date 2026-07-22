@@ -1,10 +1,16 @@
 const { Router } = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 
+const uploadDir = path.join(__dirname, '..', 'public', 'assets', 'productos');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '..', 'public', 'assets', 'productos'),
+  destination: uploadDir,
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const name = crypto.randomBytes(8).toString('hex');
