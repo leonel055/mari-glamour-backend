@@ -4,25 +4,21 @@ const PagoService = require('../PagoService');
 class MercadoPagoService extends PagoService {
   constructor() {
     super();
-    const tokenProd = process.env.MP_ACCESS_TOKEN;
-    const tokenTest = process.env.MP_ACCESS_TOKEN_TEST;
-
-    this.clientProd = tokenProd ? new MercadoPagoConfig({ accessToken: tokenProd }) : null;
-    this.clientTest = tokenTest ? new MercadoPagoConfig({ accessToken: tokenTest }) : null;
+    const accessToken = process.env.MP_ACCESS_TOKEN;
+    if (!accessToken) {
+      console.warn('MP_ACCESS_TOKEN no configurado.');
+    }
+    this.client = accessToken ? new MercadoPagoConfig({ accessToken }) : null;
   }
 
   async createPreference(pedido, detalles, buyer) {
+    if (!this.client) {
+      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
+    }
+
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
     const modoLocal = !frontendUrl.startsWith('https');
-
-    const client = modoLocal ? this.clientTest : this.clientProd;
-    if (!client) {
-      const msg = modoLocal
-        ? 'Falta MP_ACCESS_TOKEN_TEST para el entorno local'
-        : 'Falta MP_ACCESS_TOKEN para produccion';
-      throw new Error(msg);
-    }
 
     const body = {
       items: detalles.map((d) => ({
@@ -36,7 +32,6 @@ class MercadoPagoService extends PagoService {
       payer: {
         name: buyer.nombre || '',
         email: buyer.email || '',
-        phone: buyer.telefono ? { number: buyer.telefono } : undefined,
       },
       back_urls: {
         success: `${frontendUrl}/pedido/${pedido.id}/exito`,
@@ -47,13 +42,11 @@ class MercadoPagoService extends PagoService {
       external_reference: pedido.id,
     };
 
-    if (modoLocal) {
-      body.purpose = 'wallet_purchase';
-    } else {
+    if (!modoLocal) {
       body.auto_return = 'approved';
     }
 
-    const preference = new Preference(client);
+    const preference = new Preference(this.client);
     const result = await preference.create({ body });
 
     return {
@@ -63,13 +56,12 @@ class MercadoPagoService extends PagoService {
   }
 
   async verifyPayment(paymentId) {
-    const client = this.clientProd || this.clientTest;
-    if (!client) {
+    if (!this.client) {
       throw new Error('Mercado Pago no configurado.');
     }
 
     const { Payment } = require('mercadopago');
-    const payment = new Payment(client);
+    const payment = new Payment(this.client);
     const result = await payment.get({ id: paymentId });
 
     return {
