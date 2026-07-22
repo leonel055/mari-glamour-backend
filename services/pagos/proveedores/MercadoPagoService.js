@@ -18,7 +18,8 @@ class MercadoPagoService extends PagoService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const modoLocal = !frontendUrl.startsWith('https');
+    const forceSandbox = process.env.MP_SANDBOX === 'true';
+    const modoLocal = forceSandbox || !frontendUrl.startsWith('https');
 
     const body = {
       items: detalles.map((d) => ({
