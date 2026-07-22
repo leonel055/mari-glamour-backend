@@ -18,8 +18,6 @@ class MercadoPagoService extends PagoService {
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const forceSandbox = process.env.MP_SANDBOX === 'true';
-    const modoLocal = forceSandbox || !frontendUrl.startsWith('https');
 
     const body = {
       items: detalles.map((d) => ({
@@ -41,18 +39,15 @@ class MercadoPagoService extends PagoService {
       },
       notification_url: `${backendUrl}/api/webhooks/mercadopago`,
       external_reference: pedido.id,
+      auto_return: 'approved',
     };
-
-    if (!modoLocal) {
-      body.auto_return = 'approved';
-    }
 
     const preference = new Preference(this.client);
     const result = await preference.create({ body });
 
     return {
       preferenceId: result.id,
-      initPoint: modoLocal ? result.sandbox_init_point : result.init_point,
+      initPoint: result.init_point,
     };
   }
 
