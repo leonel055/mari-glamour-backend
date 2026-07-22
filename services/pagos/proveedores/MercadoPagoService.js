@@ -4,23 +4,25 @@ const PagoService = require('../PagoService');
 class MercadoPagoService extends PagoService {
   constructor() {
     super();
-    const accessToken = process.env.MP_ACCESS_TOKEN;
-    if (!accessToken) {
-      console.warn('MP_ACCESS_TOKEN no configurado. Mercado Pago deshabilitado.');
-    }
-    this.client = accessToken
-      ? new MercadoPagoConfig({ accessToken })
-      : null;
-    this.esProduccion = accessToken?.startsWith('APP_USR') ?? false;
+    const tokenProd = process.env.MP_ACCESS_TOKEN;
+    const tokenTest = process.env.MP_ACCESS_TOKEN_TEST;
+
+    this.clientProd = tokenProd ? new MercadoPagoConfig({ accessToken: tokenProd }) : null;
+    this.clientTest = tokenTest ? new MercadoPagoConfig({ accessToken: tokenTest }) : null;
   }
 
   async createPreference(pedido, detalles, buyer) {
-    if (!this.client) {
-      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
-    }
-
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const modoLocal = !frontendUrl.startsWith('https');
+
+    const client = modoLocal ? this.clientTest : this.clientProd;
+    if (!client) {
+      const msg = modoLocal
+        ? 'Falta MP_ACCESS_TOKEN_TEST para el entorno local'
+        : 'Falta MP_ACCESS_TOKEN para produccion';
+      throw new Error(msg);
+    }
 
     const body = {
       items: detalles.map((d) => ({
@@ -45,18 +47,13 @@ class MercadoPagoService extends PagoService {
       external_reference: pedido.id,
     };
 
-    const frontendSsl = frontendUrl.startsWith('https');
-    const modoLocal = !frontendSsl;
-
     if (modoLocal) {
       body.purpose = 'wallet_purchase';
-    }
-
-    if (this.esProduccion && frontendSsl) {
+    } else {
       body.auto_return = 'approved';
     }
 
-    const preference = new Preference(this.client);
+    const preference = new Preference(client);
     const result = await preference.create({ body });
 
     return {
@@ -66,12 +63,13 @@ class MercadoPagoService extends PagoService {
   }
 
   async verifyPayment(paymentId) {
-    if (!this.client) {
-      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
+    const client = this.clientProd || this.clientTest;
+    if (!client) {
+      throw new Error('Mercado Pago no configurado.');
     }
 
     const { Payment } = require('mercadopago');
-    const payment = new Payment(this.client);
+    const payment = new Payment(client);
     const result = await payment.get({ id: paymentId });
 
     return {
