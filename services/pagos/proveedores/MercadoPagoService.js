@@ -46,6 +46,12 @@ class MercadoPagoService extends PagoService {
     };
 
     const frontendSsl = frontendUrl.startsWith('https');
+    const modoLocal = !frontendSsl;
+
+    if (modoLocal) {
+      body.purpose = 'wallet_purchase';
+    }
+
     if (this.esProduccion && frontendSsl) {
       body.auto_return = 'approved';
     }
@@ -55,7 +61,7 @@ class MercadoPagoService extends PagoService {
 
     return {
       preferenceId: result.id,
-      initPoint: this.esProduccion ? result.init_point : result.sandbox_init_point,
+      initPoint: modoLocal ? result.sandbox_init_point : result.init_point,
     };
   }
 
