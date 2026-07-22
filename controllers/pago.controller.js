@@ -1,5 +1,6 @@
 const { Pedido, DetallePedido, Pago, Producto } = require('../models');
 const { getProveedorPago } = require('../services/pagos');
+const { Op } = require('sequelize');
 
 const createPreference = async (req, res) => {
   try {
@@ -53,7 +54,7 @@ const createPreference = async (req, res) => {
       estado: 'PENDIENTE',
     });
 
-    const detalles = await DetallePedido.bulkCreate(
+    await DetallePedido.bulkCreate(
       detallesData.map((d) => ({
         pedidoId: pedido.id,
         productoId: d.productoId,
@@ -70,11 +71,7 @@ const createPreference = async (req, res) => {
     });
 
     const proveedor = getProveedorPago();
-    const result = await proveedor.createPreference(
-      pedido,
-      detallesData,
-      buyer
-    );
+    const result = await proveedor.createPreference(pedido, detallesData, buyer);
 
     await Pago.update(
       { preferenceId: result.preferenceId },
@@ -89,6 +86,39 @@ const createPreference = async (req, res) => {
   } catch (error) {
     console.error('Error al crear preferencia:', error.message);
     res.status(500).json({ error: error.message || 'Error al procesar el pago' });
+  }
+};
+
+const confirmarPago = async (req, res) => {
+  try {
+    const { pedidoId, paymentId } = req.body;
+
+    if (!pedidoId || !paymentId) {
+      return res.status(400).json({ error: 'pedidoId y paymentId son obligatorios' });
+    }
+
+    const pedido = await Pedido.findByPk(pedidoId);
+    if (!pedido) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    if (pedido.estado === 'PAGADO') {
+      const pago = await Pago.findOne({ where: { pedidoId } });
+      return res.json({ pedidoId, estado: 'PAGADO', yaProcesado: true });
+    }
+
+    const proveedor = getProveedorPago();
+    const paymentInfo = await proveedor.verifyPayment(paymentId);
+
+    if (paymentInfo.status === 'approved') {
+      await procesarPagoAprobado(pedido, paymentId, paymentInfo);
+      return res.json({ pedidoId, estado: 'PAGADO' });
+    }
+
+    return res.json({ pedidoId, estado: paymentInfo.status });
+  } catch (error) {
+    console.error('Error al confirmar pago:', error.message);
+    res.status(500).json({ error: error.message || 'Error al confirmar pago' });
   }
 };
 
@@ -124,8 +154,43 @@ const listarPedidos = async (req, res) => {
   }
 };
 
+async function procesarPagoAprobado(pedido, paymentId, paymentInfo) {
+  await Pedido.update(
+    { estado: 'PAGADO' },
+    { where: { id: pedido.id } }
+  );
+
+  await Pago.update(
+    {
+      paymentId,
+      estado: 'APROBADO',
+      metodoPago: paymentInfo.paymentMethodId || 'mercadopago',
+    },
+    { where: { pedidoId: pedido.id } }
+  );
+
+  const detalles = await DetallePedido.findAll({
+    where: { pedidoId: pedido.id },
+  });
+
+  for (const detalle of detalles) {
+    await Producto.increment(
+      { stock: -detalle.cantidad },
+      {
+        where: {
+          id: detalle.productoId,
+          stock: { [Op.gte]: detalle.cantidad },
+        },
+      }
+    );
+  }
+
+  console.log(`Pedido ${pedido.id} pagado. Stock actualizado.`);
+}
+
 module.exports = {
   createPreference,
+  confirmarPago,
   obtenerPedido,
   listarPedidos,
 };
