@@ -56,8 +56,8 @@ async function startServer() {
       await sequelize.sync({ alter: true });
       console.log('Modelos sincronizados con alter.');
     } else {
-      await sequelize.sync();
-      console.log('Tablas creadas si no existen.');
+      await sequelize.sync({ alter: true });
+      console.log('Tablas sincronizadas con alter (prod).');
     }
 
     app.listen(PORT, () => {
