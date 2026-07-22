@@ -11,6 +11,7 @@ class MercadoPagoService extends PagoService {
     this.client = accessToken
       ? new MercadoPagoConfig({ accessToken })
       : null;
+    this.esProduccion = accessToken?.startsWith('APP_USR') ?? false;
   }
 
   async createPreference(pedido, detalles, buyer) {
@@ -40,18 +41,21 @@ class MercadoPagoService extends PagoService {
         failure: `${frontendUrl}/pedido/${pedido.id}/fracaso`,
         pending: `${frontendUrl}/pedido/${pedido.id}/pendiente`,
       },
-      auto_return: 'approved',
       notification_url: `${backendUrl}/api/webhooks/mercadopago`,
       external_reference: pedido.id,
     };
+
+    const frontendSsl = frontendUrl.startsWith('https');
+    if (this.esProduccion && frontendSsl) {
+      body.auto_return = 'approved';
+    }
 
     const preference = new Preference(this.client);
     const result = await preference.create({ body });
 
     return {
       preferenceId: result.id,
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point,
+      initPoint: this.esProduccion ? result.init_point : result.sandbox_init_point,
     };
   }
 
