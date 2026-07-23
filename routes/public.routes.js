@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { Servicio, Curso, Producto } = require('../models');
+const { Servicio, Curso, Producto, ProductoImagen } = require('../models');
 const turnoService = require('../services/turno.service');
 
 const router = Router();
@@ -33,6 +33,7 @@ router.get('/productos', async (req, res) => {
     const productos = await Producto.findAll({
       where: { activo: true },
       order: [['createdAt', 'DESC']],
+      include: [{ association: 'imagenes', attributes: ['id', 'imagen', 'orden'] }],
     });
     res.json(productos);
   } catch (error) {

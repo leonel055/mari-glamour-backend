@@ -8,6 +8,7 @@ const Producto = require('./Producto');
 const Pedido = require('./Pedido');
 const DetallePedido = require('./DetallePedido');
 const Pago = require('./Pago');
+const ProductoImagen = require('./ProductoImagen');
 
 Cliente.hasMany(Turno, { foreignKey: 'clienteId' });
 Turno.belongsTo(Cliente, { foreignKey: 'clienteId' });
@@ -27,6 +28,9 @@ Producto.hasMany(DetallePedido, { foreignKey: 'productoId' });
 Pedido.hasOne(Pago, { foreignKey: 'pedidoId', as: 'pago' });
 Pago.belongsTo(Pedido, { foreignKey: 'pedidoId' });
 
+Producto.hasMany(ProductoImagen, { foreignKey: 'productoId', as: 'imagenes', onDelete: 'CASCADE' });
+ProductoImagen.belongsTo(Producto, { foreignKey: 'productoId' });
+
 module.exports = {
   sequelize,
   Usuario,
@@ -38,4 +42,5 @@ module.exports = {
   Pedido,
   DetallePedido,
   Pago,
+  ProductoImagen,
 };
