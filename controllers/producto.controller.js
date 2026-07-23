@@ -65,6 +65,20 @@ const editarProducto = async (req, res) => {
   }
 };
 
+const obtenerProducto = async (req, res) => {
+  try {
+    const producto = await Producto.findByPk(req.params.id, {
+      include: [{ association: 'imagenes', attributes: ['id', 'imagen', 'orden'] }],
+    });
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json(producto);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const eliminarProducto = async (req, res) => {
   try {
     const producto = await Producto.findByPk(req.params.id);
@@ -95,6 +109,7 @@ const toggleEstado = async (req, res) => {
 module.exports = {
   crearProducto,
   listarProductos,
+  obtenerProducto,
   editarProducto,
   eliminarProducto,
   toggleEstado,
