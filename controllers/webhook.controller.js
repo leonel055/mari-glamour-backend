@@ -1,6 +1,8 @@
-const { Pedido, Pago, DetallePedido, Producto } = require('../models');
+const { Pedido, Pago, DetallePedido, Producto, Turno, Servicio } = require('../models');
 const { getProveedorPago } = require('../services/pagos');
 const { Op } = require('sequelize');
+const turnoService = require('../services/turno.service');
+const { notificarNuevaReserva } = require('../services/whatsapp.service');
 
 const mercadopagoWebhook = async (req, res) => {
   try {
@@ -19,6 +21,12 @@ const mercadopagoWebhook = async (req, res) => {
     const paymentInfo = await proveedor.verifyPayment(paymentId);
 
     if (paymentInfo.status === 'approved') {
+      if (paymentInfo.externalReference && paymentInfo.externalReference.startsWith('TURNO-')) {
+        const turnoId = paymentInfo.externalReference.replace('TURNO-', '');
+        await procesarReservaAprobada(turnoId, paymentId, paymentInfo);
+        return res.status(200).json({ recibido: true });
+      }
+
       const pago = await Pago.findOne({
         where: { preferenceId: paymentInfo.preferenceId },
       });
@@ -49,6 +57,21 @@ const mercadopagoWebhook = async (req, res) => {
     res.status(200).json({ recibido: true });
   }
 };
+
+async function procesarReservaAprobada(turnoId, paymentId, paymentInfo) {
+  try {
+    const confirmado = await turnoService.confirmarReserva(turnoId, paymentId, paymentInfo);
+
+    const servicios = await Servicio.findAll({
+      where: { id: { [Op.in]: confirmado.servicioIds } },
+    });
+
+    notificarNuevaReserva(confirmado, servicios, confirmado.montoSenia);
+    console.log(`Reserva ${turnoId} confirmada y notificada por WhatsApp.`);
+  } catch (error) {
+    console.error('Error procesando reserva en webhook:', error.message);
+  }
+}
 
 async function procesarPagoAprobado(pedido, paymentId, paymentInfo) {
   await Pedido.update(

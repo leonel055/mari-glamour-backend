@@ -29,10 +29,19 @@ async function calcularDuracionTotal(servicioIds) {
 async function verificarSuperposicion(fecha, horaInicio, horaFin, turnoIdExclude) {
   const where = {
     fecha,
-    estado: { [Op.ne]: 'CANCELADO' },
     [Op.and]: [
+      { estado: { [Op.ne]: 'CANCELADO' } },
       { horaInicio: { [Op.lt]: horaFin } },
       { horaFin: { [Op.gt]: horaInicio } },
+      {
+        [Op.not]: {
+          [Op.and]: [
+            { estado: 'PENDIENTE' },
+            { reservaExpira: { [Op.not]: null } },
+            { reservaExpira: { [Op.lt]: new Date() } },
+          ],
+        },
+      },
     ],
   };
 
@@ -225,7 +234,18 @@ const horariosDisponibles = async (fecha, servicioIds) => {
   const turnos = await Turno.findAll({
     where: {
       fecha,
-      estado: { [Op.ne]: 'CANCELADO' },
+      [Op.and]: [
+        { estado: { [Op.ne]: 'CANCELADO' } },
+        {
+          [Op.not]: {
+            [Op.and]: [
+              { estado: 'PENDIENTE' },
+              { reservaExpira: { [Op.not]: null } },
+              { reservaExpira: { [Op.lt]: new Date() } },
+            ],
+          },
+        },
+      ],
     },
     order: [['horaInicio', 'ASC']],
   });
@@ -246,10 +266,154 @@ const horariosDisponibles = async (fecha, servicioIds) => {
   return disponibles.map((s) => s.hora);
 };
 
+async function precioTotalServicios(ids) {
+  const servicios = await Servicio.findAll({
+    where: { id: { [Op.in]: ids } },
+  });
+  return servicios.reduce((total, s) => total + Number(s.precio || 0), 0);
+}
+
+const crearReservaOnline = async ({
+  servicioIds,
+  fecha,
+  horaInicio,
+  clienteNombre,
+  clienteWhatsApp,
+  observaciones,
+}) => {
+  if (!servicioIds || servicioIds.length === 0) {
+    throw new Error('Debes seleccionar al menos un servicio');
+  }
+  if (!fecha) {
+    throw new Error('Debes seleccionar una fecha');
+  }
+  if (!horaInicio) {
+    throw new Error('Debes seleccionar un horario');
+  }
+  if (!clienteNombre || !clienteNombre.trim()) {
+    throw new Error('El nombre es obligatorio');
+  }
+
+  const fechaDate = new Date(fecha + 'T12:00:00');
+  const diaSemana = fechaDate.getDay();
+  if (diaSemana === 0) {
+    throw new Error('No se atiende los domingos');
+  }
+
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  if (fecha < hoyStr) {
+    throw new Error('No se pueden reservar turnos en fechas pasadas');
+  }
+
+  const ids = Array.isArray(servicioIds) ? servicioIds : [servicioIds];
+
+  const serviciosExistentes = await Servicio.findAll({
+    where: { id: { [Op.in]: ids } },
+  });
+  if (serviciosExistentes.length !== ids.length) {
+    throw new Error('Uno o mas servicios no fueron encontrados');
+  }
+
+  const duracionTotal = await calcularDuracionTotal(ids);
+  const horaFin = calcularHoraFin(horaInicio, duracionTotal);
+  if (horaEnMinutos(horaFin) > 22 * 60) {
+    throw new Error('El turno supera el horario de atencion (22:00)');
+  }
+
+  const disponibles = await horariosDisponibles(fecha, ids);
+  if (!disponibles.includes(horaInicio)) {
+    throw new Error('El horario seleccionado no esta disponible');
+  }
+
+  const montoSenia = Math.round((await precioTotalServicios(ids)) * 0.5);
+
+  const turno = await Turno.create({
+    servicioId: ids[0],
+    servicioIds: ids,
+    fecha,
+    horaInicio,
+    horaFin,
+    estado: 'PENDIENTE',
+    metodoReserva: 'ONLINE',
+    montoSenia,
+    seniaPagada: false,
+    reservaExpira: new Date(Date.now() + 10 * 60 * 1000),
+    clienteNombre: clienteNombre.trim(),
+    clienteWhatsApp: clienteWhatsApp || null,
+    observaciones: observaciones || null,
+    costoAdicional: 0,
+  });
+
+  return turno;
+};
+
+const confirmarReserva = async (id, paymentId, paymentInfo) => {
+  const turno = await Turno.findByPk(id);
+  if (!turno) {
+    throw new Error('Reserva no encontrada');
+  }
+  if (turno.estado === 'CANCELADO') {
+    throw new Error('La reserva fue cancelada o expiro');
+  }
+  if (turno.estado === 'CONFIRMADO' && turno.seniaPagada) {
+    return turno;
+  }
+  if (turno.reservaExpira && new Date(turno.reservaExpira) < new Date()) {
+    await turno.update({ estado: 'CANCELADO', reservaExpira: null });
+    throw new Error('La reserva temporal expiro. Volve a intentarlo.');
+  }
+
+  await turno.update({
+    estado: 'CONFIRMADO',
+    seniaPagada: true,
+    paymentId,
+    preferenceId: paymentInfo?.preferenceId || turno.preferenceId,
+    reservaExpira: null,
+  });
+
+  return turno;
+};
+
+const obtenerReserva = async (id) => {
+  const turno = await Turno.findByPk(id, {
+    include: [{ model: Servicio, attributes: ['id', 'nombre', 'precio', 'duracion'] }],
+  });
+  if (!turno) {
+    throw new Error('Reserva no encontrada');
+  }
+
+  if (turno.estado === 'PENDIENTE' && turno.reservaExpira && new Date(turno.reservaExpira) < new Date()) {
+    await turno.update({ estado: 'CANCELADO', reservaExpira: null });
+    turno.estado = 'CANCELADO';
+  }
+
+  return turno;
+};
+
+const expirarReservasPendientes = async () => {
+  const ahora = new Date();
+  await Turno.update(
+    { estado: 'CANCELADO', reservaExpira: null },
+    {
+      where: {
+        estado: 'PENDIENTE',
+        reservaExpira: { [Op.not]: null },
+        reservaExpira: { [Op.lt]: ahora },
+      },
+    }
+  );
+};
+
 module.exports = {
   crearTurno,
   listarTurnos,
   editarTurno,
   cancelarTurno,
   horariosDisponibles,
+  crearReservaOnline,
+  confirmarReserva,
+  obtenerReserva,
+  expirarReservasPendientes,
+  precioTotalServicios,
 };

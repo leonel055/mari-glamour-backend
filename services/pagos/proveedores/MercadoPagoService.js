@@ -71,6 +71,49 @@ class MercadoPagoService extends PagoService {
       preferenceId: result.preference_id,
     };
   }
+
+  async createTurnoPreference(turno, servicios, montoSenia, buyer) {
+    if (!this.client) {
+      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+
+    const nombres = servicios.map((s) => s.nombre).join(' + ');
+
+    const body = {
+      items: [
+        {
+          id: turno.id,
+          title: `Seña (50%) - ${nombres}`,
+          description: `Reserva ${turno.fecha} ${turno.horaInicio.slice(0, 5)} - ${turno.horaFin.slice(0, 5)}`,
+          quantity: 1,
+          unit_price: Number(montoSenia),
+          currency_id: 'ARS',
+        },
+      ],
+      payer: {
+        name: buyer.nombre || '',
+      },
+      back_urls: {
+        success: `${frontendUrl}/reservar/${turno.id}/resultado/exito`,
+        failure: `${frontendUrl}/reservar/${turno.id}/resultado/fracaso`,
+        pending: `${frontendUrl}/reservar/${turno.id}/resultado/pendiente`,
+      },
+      notification_url: `${backendUrl}/api/webhooks/mercadopago`,
+      external_reference: `TURNO-${turno.id}`,
+      auto_return: 'approved',
+    };
+
+    const preference = new Preference(this.client);
+    const result = await preference.create({ body });
+
+    return {
+      preferenceId: result.id,
+      initPoint: result.init_point,
+    };
+  }
 }
 
 module.exports = MercadoPagoService;

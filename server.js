@@ -16,6 +16,7 @@ const productoRoutes = require('./routes/producto.routes');
 const pagoRoutes = require('./routes/pago.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const turnoService = require('./services/turno.service');
 
 const app = express();
 
@@ -68,6 +69,14 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en el puerto ${PORT}`);
     });
+
+    setInterval(async () => {
+      try {
+        await turnoService.expirarReservasPendientes();
+      } catch (error) {
+        console.error('Error expirando reservas pendientes:', error.message);
+      }
+    }, 60 * 1000);
   } catch (error) {
     console.error('Error al conectar con la base de datos:', error.message);
     console.error(error)

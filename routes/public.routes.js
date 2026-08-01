@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { Servicio, Curso, Producto, ProductoImagen } = require('../models');
 const turnoService = require('../services/turno.service');
+const reservaController = require('../controllers/reserva.controller');
 
 const router = Router();
 
@@ -54,5 +55,9 @@ router.get('/disponibilidad', async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+router.post('/reservas', reservaController.crearReserva);
+router.post('/reservas/confirmar', reservaController.confirmarReserva);
+router.get('/reservas/:id', reservaController.obtenerReserva);
 
 module.exports = router;

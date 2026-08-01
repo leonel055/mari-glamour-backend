@@ -23,7 +23,7 @@ const Turno = sequelize.define('Turno', {
     type: DataTypes.STRING,
     defaultValue: 'PENDIENTE',
     validate: {
-      isIn: [['PENDIENTE', 'CONFIRMADO', 'FINALIZADO', 'CANCELADO']],
+      isIn: [['PENDIENTE', 'CONFIRMADO', 'FINALIZADO', 'CANCELADO', 'REPROGRAMADO']],
     },
   },
   servicioIds: {
@@ -38,6 +38,45 @@ const Turno = sequelize.define('Turno', {
   },
   observaciones: {
     type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  metodoReserva: {
+    type: DataTypes.STRING,
+    defaultValue: 'MANUAL',
+    validate: {
+      isIn: [['MANUAL', 'WHATSAPP', 'ONLINE']],
+    },
+  },
+  montoSenia: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0,
+    comment: 'Monto de la seña a abonar',
+  },
+  seniaPagada: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  paymentId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  preferenceId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  reservaExpira: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Vencimiento de la reserva temporal online (10 min)',
+  },
+  clienteNombre: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Nombre del cliente para reservas online sin cuenta',
+  },
+  clienteWhatsApp: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
 });
