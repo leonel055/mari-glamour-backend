@@ -279,6 +279,7 @@ const crearReservaOnline = async ({
   horaInicio,
   clienteNombre,
   clienteWhatsApp,
+  clienteEmail,
   observaciones,
 }) => {
   if (!servicioIds || servicioIds.length === 0) {
@@ -341,6 +342,7 @@ const crearReservaOnline = async ({
     reservaExpira: new Date(Date.now() + 10 * 60 * 1000),
     clienteNombre: clienteNombre.trim(),
     clienteWhatsApp: clienteWhatsApp || null,
+    clienteEmail: clienteEmail || null,
     observaciones: observaciones || null,
     costoAdicional: 0,
   });

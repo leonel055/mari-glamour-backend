@@ -79,6 +79,10 @@ const Turno = sequelize.define('Turno', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  clienteEmail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 
 module.exports = Turno;

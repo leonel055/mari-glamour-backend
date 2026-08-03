@@ -95,6 +95,7 @@ class MercadoPagoService extends PagoService {
       ],
       payer: {
         name: buyer.nombre || '',
+        email: buyer.email || '',
       },
       back_urls: {
         success: `${frontendUrl}/reservar/${turno.id}/resultado/exito`,

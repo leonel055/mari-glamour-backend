@@ -6,7 +6,7 @@ const { Op } = require('sequelize');
 
 const crearReserva = async (req, res) => {
   try {
-    const { servicioIds, fecha, horaInicio, clienteNombre, clienteWhatsApp, observaciones } = req.body;
+    const { servicioIds, fecha, horaInicio, clienteNombre, clienteWhatsApp, clienteEmail, observaciones } = req.body;
 
     const turno = await turnoService.crearReservaOnline({
       servicioIds,
@@ -14,6 +14,7 @@ const crearReserva = async (req, res) => {
       horaInicio,
       clienteNombre,
       clienteWhatsApp,
+      clienteEmail,
       observaciones,
     });
 
@@ -27,7 +28,7 @@ const crearReserva = async (req, res) => {
         turno,
         servicios,
         turno.montoSenia,
-        { nombre: clienteNombre }
+        { nombre: clienteNombre, email: clienteEmail }
       );
 
       await Turno.update(
