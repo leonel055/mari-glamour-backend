@@ -77,6 +77,18 @@ async function startServer() {
         console.error('Error expirando reservas pendientes:', error.message);
       }
     }, 60 * 1000);
+
+    const backendUrl = process.env.BACKEND_URL || '';
+    if (isProd && /^https:\/\//.test(backendUrl)) {
+      setInterval(async () => {
+        try {
+          await fetch(`${backendUrl}/api/public/servicios`, { method: 'GET' });
+        } catch (error) {
+          console.error('Error en keep-alive:', error.message);
+        }
+      }, 5 * 60 * 1000);
+      console.log('Keep-alive activo cada 5 min.');
+    }
   } catch (error) {
     console.error('Error al conectar con la base de datos:', error.message);
     console.error(error)
