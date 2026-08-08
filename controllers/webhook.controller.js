@@ -1,4 +1,4 @@
-const { Pedido, Pago, DetallePedido, Producto, Turno, Servicio } = require('../models');
+const { Pedido, Pago, DetallePedido, Producto, Turno, Servicio, MpCredencial } = require('../models');
 const { getProveedorPago } = require('../services/pagos');
 const { Op } = require('sequelize');
 const turnoService = require('../services/turno.service');
@@ -19,6 +19,13 @@ const mercadopagoWebhook = async (req, res) => {
 
     const proveedor = getProveedorPago();
     const paymentInfo = await proveedor.verifyPayment(paymentId);
+
+    const credencial = await MpCredencial.findOne();
+    if (credencial && paymentInfo.userId && String(paymentInfo.userId) !== String(credencial.mpUserId)) {
+      console.warn(
+        `Webhook de cuenta Mercado Pago ${paymentInfo.userId} no coincide con la cuenta conectada ${credencial.mpUserId}.`
+      );
+    }
 
     if (paymentInfo.status === 'approved') {
       if (paymentInfo.externalReference && paymentInfo.externalReference.startsWith('TURNO-')) {

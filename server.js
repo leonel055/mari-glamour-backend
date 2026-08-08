@@ -15,6 +15,7 @@ const cursoRoutes = require('./routes/curso.routes');
 const productoRoutes = require('./routes/producto.routes');
 const pagoRoutes = require('./routes/pago.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const mpOauthRoutes = require('./routes/mp-oauth.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const turnoService = require('./services/turno.service');
 
@@ -50,6 +51,7 @@ app.use('/api/productos', autenticar, productoRoutes);
 app.use('/api/upload', autenticar, uploadRoutes);
 app.use('/api/pagos', pagoRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/mp/oauth', mpOauthRoutes);
 
 const PORT = process.env.PORT || 3000;
 

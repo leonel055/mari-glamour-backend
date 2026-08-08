@@ -1,5 +1,6 @@
 const sequelize = require('../config/database');
 const Usuario = require('./Usuario');
+const MpCredencial = require('./MpCredencial');
 const Cliente = require('./Cliente');
 const Servicio = require('./Servicio');
 const Turno = require('./Turno');
@@ -19,6 +20,9 @@ Turno.belongsTo(Servicio, { foreignKey: 'servicioId' });
 Usuario.hasMany(Turno, { foreignKey: 'usuarioId' });
 Turno.belongsTo(Usuario, { foreignKey: 'usuarioId' });
 
+Usuario.hasOne(MpCredencial, { foreignKey: 'usuarioId', as: 'mpCredencial', onDelete: 'CASCADE' });
+MpCredencial.belongsTo(Usuario, { foreignKey: 'usuarioId' });
+
 Pedido.hasMany(DetallePedido, { foreignKey: 'pedidoId', as: 'detalles' });
 DetallePedido.belongsTo(Pedido, { foreignKey: 'pedidoId' });
 
@@ -34,6 +38,7 @@ ProductoImagen.belongsTo(Producto, { foreignKey: 'productoId' });
 module.exports = {
   sequelize,
   Usuario,
+  MpCredencial,
   Cliente,
   Servicio,
   Turno,

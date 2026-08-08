@@ -1,20 +1,41 @@
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const PagoService = require('../PagoService');
+const { obtenerCredencialActiva } = require('../../mp-oauth.service');
 
 class MercadoPagoService extends PagoService {
   constructor() {
     super();
-    const accessToken = process.env.MP_ACCESS_TOKEN;
-    if (!accessToken) {
-      console.warn('MP_ACCESS_TOKEN no configurado.');
+    this.accessTokenEnv = process.env.MP_ACCESS_TOKEN;
+    if (!this.accessTokenEnv) {
+      console.warn('MP_ACCESS_TOKEN no configurado (se usara OAuth si esta conectado).');
     }
-    this.client = accessToken ? new MercadoPagoConfig({ accessToken }) : null;
+  }
+
+  async obtenerCliente() {
+    let accessToken = null;
+
+    try {
+      const credencial = await obtenerCredencialActiva();
+      if (credencial?.accessToken) {
+        accessToken = credencial.accessToken;
+      }
+    } catch (error) {
+      console.warn('No se pudo leer credencial OAuth de la base:', error.message);
+    }
+
+    if (!accessToken) {
+      accessToken = this.accessTokenEnv;
+    }
+
+    if (!accessToken) {
+      throw new Error('Mercado Pago no configurado. Conecta tu cuenta en el admin.');
+    }
+
+    return new MercadoPagoConfig({ accessToken });
   }
 
   async createPreference(pedido, detalles, buyer) {
-    if (!this.client) {
-      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
-    }
+    const client = await this.obtenerCliente();
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
@@ -42,7 +63,7 @@ class MercadoPagoService extends PagoService {
       auto_return: 'approved',
     };
 
-    const preference = new Preference(this.client);
+    const preference = new Preference(client);
     const result = await preference.create({ body });
 
     return {
@@ -52,12 +73,10 @@ class MercadoPagoService extends PagoService {
   }
 
   async verifyPayment(paymentId) {
-    if (!this.client) {
-      throw new Error('Mercado Pago no configurado.');
-    }
+    const client = await this.obtenerCliente();
 
     const { Payment } = require('mercadopago');
-    const payment = new Payment(this.client);
+    const payment = new Payment(client);
     const result = await payment.get({ id: paymentId });
 
     return {
@@ -69,13 +88,12 @@ class MercadoPagoService extends PagoService {
       payerEmail: result.payer?.email,
       externalReference: result.external_reference,
       preferenceId: result.preference_id,
+      userId: result.user_id,
     };
   }
 
   async createTurnoPreference(turno, servicios, montoSenia, buyer) {
-    if (!this.client) {
-      throw new Error('Mercado Pago no configurado. Falta MP_ACCESS_TOKEN.');
-    }
+    const client = await this.obtenerCliente();
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
@@ -107,7 +125,7 @@ class MercadoPagoService extends PagoService {
       auto_return: 'approved',
     };
 
-    const preference = new Preference(this.client);
+    const preference = new Preference(client);
     const result = await preference.create({ body });
 
     return {
