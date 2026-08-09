@@ -17,7 +17,7 @@ const authorize = async (req, res) => {
 };
 
 const callback = async (req, res) => {
-  const { code, state, error } = req.query;
+  const { code, state, error, error_description } = req.query;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
 
   const redirigir = (params) => {
@@ -25,17 +25,23 @@ const callback = async (req, res) => {
     return res.redirect(`${frontendUrl}/admin/agenda${sep}${params}`);
   };
 
+  const redirigirError = (msg) => {
+    const detalle = msg ? `:${encodeURIComponent(String(msg).slice(0, 300))}` : '';
+    return redirigir(`mp=error${detalle}`);
+  };
+
   try {
     if (error) {
-      return redirigir('mp=error');
+      const mpMsg = error_description ? `${error}: ${error_description}` : error;
+      return redirigirError(mpMsg);
     }
     if (!code || !state) {
-      return redirigir('mp=error');
+      return redirigirError('Falta code o state');
     }
 
     const decoded = jwt.verify(state, process.env.JWT_SECRET);
     if (!decoded?.usuarioId) {
-      return redirigir('mp=error');
+      return redirigirError('State invalido');
     }
 
     const data = await mpOauthService.exchangeCode(code);
@@ -44,7 +50,7 @@ const callback = async (req, res) => {
     return redirigir('mp=conectado');
   } catch (err) {
     console.error('Error en callback OAuth Mercado Pago:', err.message);
-    return redirigir('mp=error');
+    return redirigirError(err.message);
   }
 };
 
