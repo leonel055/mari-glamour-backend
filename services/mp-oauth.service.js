@@ -160,6 +160,35 @@ async function obtenerEstado(usuarioId) {
   };
 }
 
+async function probarCredenciales() {
+  const clientId = process.env.MP_APP_ID;
+  const clientSecret = process.env.MP_SECRET_KEY;
+  if (!clientId || !clientSecret) {
+    return { ok: false, detalle: 'Faltan MP_APP_ID o MP_SECRET_KEY' };
+  }
+
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+  });
+
+  try {
+    const res = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    const data = await res.json();
+    if (res.ok && data.access_token) {
+      return { ok: true };
+    }
+    return { ok: false, detalle: data?.error || `HTTP ${res.status}` };
+  } catch (error) {
+    return { ok: false, detalle: error.message };
+  }
+}
+
 module.exports = {
   buildAuthorizeUrl,
   exchangeCode,
@@ -167,4 +196,5 @@ module.exports = {
   obtenerCredencialActiva,
   guardarCredencial,
   obtenerEstado,
+  probarCredenciales,
 };
