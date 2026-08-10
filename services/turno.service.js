@@ -390,6 +390,13 @@ const obtenerReserva = async (id) => {
     turno.estado = 'CANCELADO';
   }
 
+  const ids = Array.isArray(turno.servicioIds) ? turno.servicioIds : [];
+  const servicios = await Servicio.findAll({
+    where: { id: { [Op.in]: ids } },
+    attributes: ['id', 'nombre', 'precio', 'duracion'],
+  });
+  turno.setDataValue('servicios', servicios);
+
   return turno;
 };
 
