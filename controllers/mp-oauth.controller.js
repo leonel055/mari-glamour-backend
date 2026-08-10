@@ -64,8 +64,23 @@ const estado = async (req, res) => {
   }
 };
 
+const diagnostico = async (req, res) => {
+  const backendUrl = process.env.BACKEND_URL || '';
+  const frontendUrl = process.env.FRONTEND_URL || '';
+  res.json({
+    mpAppIdConfigurado: !!process.env.MP_APP_ID,
+    mpSecretConfigurado: !!process.env.MP_SECRET_KEY,
+    tokenEncryptConfigurado: !!process.env.MP_TOKEN_ENCRYPT_KEY,
+    accessTokenFallbackConfigurado: !!process.env.MP_ACCESS_TOKEN,
+    backendUrl,
+    frontendUrl,
+    redirectUri: backendUrl ? `${backendUrl}/api/mp/oauth/callback` : null,
+  });
+};
+
 module.exports = {
   authorize,
   callback,
   estado,
+  diagnostico,
 };
