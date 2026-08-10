@@ -24,11 +24,11 @@ const MpCredencial = sequelize.define('MpCredencial', {
     allowNull: false,
   },
   tokenType: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   scope: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   liveMode: {
@@ -36,7 +36,7 @@ const MpCredencial = sequelize.define('MpCredencial', {
     defaultValue: false,
   },
   publicKey: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   expiresAt: {
