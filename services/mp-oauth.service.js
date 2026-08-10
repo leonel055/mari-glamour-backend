@@ -4,19 +4,27 @@ const { cifrar, descifrar } = require('./crypto.service');
 const AUTH_URL = 'https://auth.mercadopago.com.ar/authorization';
 const TOKEN_URL = 'https://api.mercadopago.com/oauth/token';
 
+function clientId() {
+  return (process.env.MP_APP_ID || '').trim();
+}
+
+function clientSecret() {
+  return (process.env.MP_SECRET_KEY || '').trim();
+}
+
 function redirectUri() {
   const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
   return `${backendUrl}/api/mp/oauth/callback`;
 }
 
 function buildAuthorizeUrl(state) {
-  const clientId = process.env.MP_APP_ID;
-  if (!clientId) {
+  const clientIdValue = clientId();
+  if (!clientIdValue) {
     throw new Error('MP_APP_ID no configurado');
   }
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: clientId,
+    client_id: clientIdValue,
     redirect_uri: redirectUri(),
     state,
   });
@@ -24,16 +32,16 @@ function buildAuthorizeUrl(state) {
 }
 
 async function exchangeCode(code) {
-  const clientId = process.env.MP_APP_ID;
-  const clientSecret = process.env.MP_SECRET_KEY;
-  if (!clientId || !clientSecret) {
+  const clientIdValue = clientId();
+  const clientSecretValue = clientSecret();
+  if (!clientIdValue || !clientSecretValue) {
     throw new Error('MP_APP_ID o MP_SECRET_KEY no configurados');
   }
 
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
-    client_id: clientId,
-    client_secret: clientSecret,
+    client_id: clientIdValue,
+    client_secret: clientSecretValue,
     code,
     redirect_uri: redirectUri(),
   });
@@ -52,16 +60,16 @@ async function exchangeCode(code) {
 }
 
 async function refreshToken(refreshTokenValue) {
-  const clientId = process.env.MP_APP_ID;
-  const clientSecret = process.env.MP_SECRET_KEY;
-  if (!clientId || !clientSecret) {
+  const clientIdValue = clientId();
+  const clientSecretValue = clientSecret();
+  if (!clientIdValue || !clientSecretValue) {
     throw new Error('MP_APP_ID o MP_SECRET_KEY no configurados');
   }
 
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
-    client_id: clientId,
-    client_secret: clientSecret,
+    client_id: clientIdValue,
+    client_secret: clientSecretValue,
     refresh_token: refreshTokenValue,
   });
 
@@ -161,16 +169,16 @@ async function obtenerEstado(usuarioId) {
 }
 
 async function probarCredenciales() {
-  const clientId = process.env.MP_APP_ID;
-  const clientSecret = process.env.MP_SECRET_KEY;
-  if (!clientId || !clientSecret) {
+  const clientIdValue = clientId();
+  const clientSecretValue = clientSecret();
+  if (!clientIdValue || !clientSecretValue) {
     return { ok: false, detalle: 'Faltan MP_APP_ID o MP_SECRET_KEY' };
   }
 
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: clientId,
-    client_secret: clientSecret,
+    client_id: clientIdValue,
+    client_secret: clientSecretValue,
   });
 
   try {
